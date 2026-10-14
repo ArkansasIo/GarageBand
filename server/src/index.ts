@@ -69,7 +69,7 @@ function authenticate(req: AuthRequest, res: Response, next: NextFunction): void
 function issueToken(user: { id: number; email: string }): string {
   return jwt.sign({ email: user.email }, jwtSecret!, {
     subject: String(user.id),
-    expiresIn: (process.env.JWT_EXPIRES_IN ?? "7d") as jwt.SignOptions["expiresIn"]
+    expiresIn: (process.env.JWT_EXPIRES_IN ?? "7d") as NonNullable<jwt.SignOptions["expiresIn"]>
   });
 }
 app.get("/api/health", async (_req, res) => {
