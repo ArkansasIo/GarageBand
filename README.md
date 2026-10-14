@@ -55,3 +55,10 @@ Browser audio requires a user interaction. The local-only mode sends no audio or
 ## License
 
 MIT. See LICENSE.
+
+
+## Audio and production tools
+
+StudioWave supports locally synthesized drum and synth tracks, 16-step programming, a melody/piano grid, track mute/volume/pan, a channel mixer, preset browsing, project JSON save/open, and stereo WAV rendering. Import audio files with **Import audio** to add local backing tracks, vocals, loops, and samples; supported formats depend on the browser's Web Audio decoder. Imported audio is looped during playback and included in WAV rendering. The project JSON records the imported filename, but audio binaries are not embedded, so re-import the source file after opening a project on another device.
+
+Use a current browser with Web Audio support. GitHub Pages serves the static client; the separately scaffolded TypeScript/MySQL API must be hosted independently.
