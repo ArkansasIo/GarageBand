@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#11151d"><title>StudioWave — Browser Music Studio</title>
+<link rel="stylesheet" href="./src/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><div class="brandmark">♫</div><div><strong>StudioWave</strong><small>Browser Music Studio</small></div></div>
+  <div class="project-name"><span class="live-dot"></span><input id="projectName" value="Untitled Session" aria-label="Project name"></div>
+  <div class="top-actions"><button id="newProject" class="quiet">New</button><button id="saveProject" class="quiet">Save project</button><button id="loadProject" class="quiet">Open</button><button id="exportWav" class="primary">Export WAV</button><input id="filePicker" type="file" accept=".json,application/json" hidden></div>
+</header>
+<main>
+<section class="transport panel">
+  <div class="transport-buttons"><button id="playBtn" class="play" aria-label="Play">▶</button><button id="stopBtn" aria-label="Stop">■</button><button id="rewindBtn" aria-label="Return to start">↤</button></div>
+  <div class="time-display"><small>POSITION</small><strong id="position">1.1.1</strong></div>
+  <div class="transport-setting"><label for="bpm">TEMPO</label><div class="stepper"><button id="bpmDown">−</button><input id="bpm" type="number" min="40" max="240" value="120"><button id="bpmUp">+</button></div><small>BPM</small></div>
+  <div class="transport-setting"><label for="masterVolume">MASTER</label><input id="masterVolume" type="range" min="0" max="1" step=".01" value=".75"><small id="masterValue">75%</small></div>
+  <div class="transport-status"><span id="statusLed"></span><span id="statusText">Ready to create</span></div>
+</section>
+<div class="workspace">
+  <aside class="sidebar panel">
+    <div class="section-heading"><span>TRACKS</span><button id="addTrack" class="small-add">＋ Add track</button></div>
+    <div id="trackList" class="track-list"></div>
+    <div class="sidebar-footer"><div class="hint-icon">i</div><p><strong>Quick start</strong><br>Choose a track, then click cells in the step grid to build a beat. Press Play to hear it.</p></div>
+  </aside>
+  <section class="arrangement panel">
+    <div class="arrangement-header"><div><h1>Arrangement</h1><p>16-step loop · 1 bar per pattern</p></div><div class="arrangement-tools"><button id="clearPattern" class="quiet">Clear selected</button><button id="duplicatePattern" class="quiet">Duplicate</button></div></div>
+    <div class="grid-scroll"><div id="sequencer" class="sequencer"></div></div>
+    <div class="arrangement-footer"><span><i class="legend-on"></i> Active step</span><span><i class="legend-play"></i> Playhead</span><span id="stepCount">0 notes</span></div>
+    <div class="lower-panel">
+      <div class="section-heading"><span>SELECTED TRACK</span><span id="selectedTrackName">Kick</span></div>
+      <div class="track-controls">
+        <label>Instrument<select id="instrument"><option value="kick">Deep Kick</option><option value="snare">Snare</option><option value="hat">Closed Hi-hat</option><option value="bass">Synth Bass</option><option value="lead">Bright Lead</option><option value="pad">Warm Pad</option><option value="keys">Electric Keys</option></select></label>
+        <label>Track volume <span id="trackVolumeLabel">80%</span><input id="trackVolume" type="range" min="0" max="1" step=".01" value=".8"></label>
+        <label>Pan <span id="panLabel">Center</span><input id="trackPan" type="range" min="-1" max="1" step=".01" value="0"></label>
+        <label class="mute-control"><input id="trackMute" type="checkbox"> Mute track</label>
+      </div>
+      <div class="piano-title"><div><h2>Melody editor</h2><p>For melodic instruments, select a pitch row and click a step.</p></div><button id="clearMelody" class="quiet">Clear melody</button></div>
+      <div id="pianoRoll" class="piano-roll"></div>
+    </div>
+  </section>
+</div>
+<footer><span>StudioWave · Original browser-based music-making demo</span><span>Audio is generated locally in your browser</span></footer>
+</main>
+<script type="module" src="./src/app.js"></script>
+</body></html>
