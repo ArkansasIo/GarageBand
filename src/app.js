@@ -536,3 +536,242 @@ function renderTimeline() {
 const originalRenderAllTimeline = renderAll;
 renderAll = function(){originalRenderAllTimeline();renderTimeline()};
 renderTimeline();
+
+
+// Standard MIDI File (SMF) import/export, undo/redo history, waveform previews.
+const midiPicker = $("#midiFilePicker");
+const undoButton = document.querySelector('[data-action="undo"]');
+const redoButton = document.querySelector('[data-action="redo"]');
+const HISTORY_LIMIT = 60;
+let undoStack = [];
+let redoStack = [];
+let historyCapturePending = false;
+let pendingHistorySnapshot = "";
+function modelSnapshot() {
+  return JSON.stringify({
+    name: $("#projectName").value,
+    bpm: Number($("#bpm").value),
+    masterVolume: Number($("#masterVolume").value),
+    selectedId,
+    tracks: tracks.map(t => ({
+      id:t.id,name:t.name,instrument:t.instrument,color:t.color,volume:t.volume,
+      pan:t.pan,muted:t.muted,steps:t.steps,notes:t.notes,
+      startStep:t.startStep||0,lengthSteps:t.lengthSteps||64,
+      audioFileName:t.audioFileName||null
+    }))
+  });
+}
+function historyUI() {
+  if (undoButton) undoButton.disabled = undoStack.length === 0;
+  if (redoButton) redoButton.disabled = redoStack.length === 0;
+}
+function scheduleHistoryCapture() {
+  if (historyCapturePending) return;
+  historyCapturePending = true;
+  pendingHistorySnapshot = modelSnapshot();
+  setTimeout(() => {
+    historyCapturePending = false;
+    const after = modelSnapshot();
+    if (after !== pendingHistorySnapshot) {
+      undoStack.push(pendingHistorySnapshot);
+      if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
+      redoStack = [];
+      historyUI();
+    }
+  }, 0);
+}
+function restoreModel(serialized) {
+  const state = JSON.parse(serialized);
+  const prior = new Map(tracks.map(t => [t.id,t]));
+  tracks = (state.tracks||[]).map(t => {
+    const old = prior.get(t.id);
+    return {...t,steps:Array.from({length:16},(_,i)=>!!t.steps?.[i]),notes:t.notes||{},
+      audioBuffer:old?.audioBuffer||null,audioSource:null,
+      audioFileName:t.audioFileName||old?.audioFileName||null};
+  });
+  if (!tracks.length) tracks=[makeTrack("Track 1","lead",COLORS[0])];
+  nextId = Math.max(0,...tracks.map(t=>Number(t.id)||0))+1;
+  selectedId = tracks.some(t=>t.id===state.selectedId)?state.selectedId:tracks[0].id;
+  $("#projectName").value=state.name||"Untitled Session";
+  $("#bpm").value=Math.max(40,Math.min(240,Number(state.bpm)||120));
+  $("#masterVolume").value=state.masterVolume??.75;
+  $("#masterValue").textContent=Math.round(Number($("#masterVolume").value)*100)+"%";
+  if(master) master.gain.value=Number($("#masterVolume").value);
+  renderAll(); renderMixer(); renderTimeline(); renderAudioAssets();
+}
+function undoEdit() {
+  if(!undoStack.length)return;
+  redoStack.push(modelSnapshot());
+  restoreModel(undoStack.pop());
+  historyUI(); $("#statusText").textContent="Undo";
+}
+function redoEdit() {
+  if(!redoStack.length)return;
+  undoStack.push(modelSnapshot());
+  restoreModel(redoStack.pop());
+  historyUI(); $("#statusText").textContent="Redo";
+}
+document.addEventListener("click", event => {
+  if(event.target.closest('[data-action="undo"]')) { event.preventDefault(); undoEdit(); }
+  else if(event.target.closest('[data-action="redo"]')) { event.preventDefault(); redoEdit(); }
+}, true);
+document.addEventListener("pointerdown", event => {
+  if(event.target.closest(".seq-cell,.piano-cell,.timeline-controls,.track-mini-actions,.mixer-channel,.preset-card,[data-instrument],#clearPattern,#clearMelody,#duplicatePattern,#addTrack,#newProject")) scheduleHistoryCapture();
+}, true);
+document.addEventListener("change", event => {
+  if(event.target.matches("#instrument,#trackMute,#smartInstrument,#smartMute,#smartName,#bpm,#projectName")) scheduleHistoryCapture();
+}, true);
+document.addEventListener("input", event => {
+  if(event.target.matches("#trackVolume,#trackPan,#smartVolume,#smartPan,#masterVolume")) scheduleHistoryCapture();
+}, true);
+document.addEventListener("keydown", event => {
+  if((event.metaKey||event.ctrlKey)&&!event.shiftKey&&event.key.toLowerCase()==="z") {
+    event.preventDefault(); undoEdit();
+  } else if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==="y") {
+    event.preventDefault(); redoEdit();
+  }
+});
+const previousMenuAction = menuAction;
+menuAction = function(action) {
+  if(action==="undo"){undoEdit();return}
+  if(action==="redo"){redoEdit();return}
+  if(action==="midi-import"){midiPicker?.click();closeMenus();return}
+  if(action==="midi-export"){exportStandardMidi();closeMenus();return}
+  return previousMenuAction(action);
+};
+function writeVarLen(value) {
+  let buffer=value&0x7f;
+  while((value>>=7)){buffer<<=8;buffer|=((value&0x7f)|0x80)}
+  const bytes=[];
+  while(true){bytes.push(buffer&0xff);if(buffer&0x80)buffer>>=8;else break}
+  return bytes;
+}
+function u16bytes(n){return [(n>>8)&255,n&255]}
+function u32bytes(n){return [(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255]}
+function asciiBytes(s){return Array.from(s,ch=>ch.charCodeAt(0))}
+function exportStandardMidi() {
+  const ppq=480,ticksPerStep=ppq/4,tracksBytes=[];
+  const tempo=Math.round(60000000/Math.max(40,Math.min(240,Number($("#bpm").value)||120)));
+  const meta=[0x00,0xff,0x51,0x03,(tempo>>16)&255,(tempo>>8)&255,tempo&255,0x00,0xff,0x2f,0x00];
+  tracksBytes.push([...asciiBytes("MTrk"),...u32bytes(meta.length),...meta]);
+  tracks.forEach((track,index)=>{
+    const events=[];
+    for(let stepIndex=0;stepIndex<64;stepIndex++){
+      const local=stepIndex%16;
+      const absolute=stepIndex;
+      if(absolute<(Number(track.startStep)||0)||absolute>=(Number(track.startStep)||0)+(Number(track.lengthSteps)||64))continue;
+      let pitch=track.notes?.[String(local)];
+      if(!pitch && track.steps?.[local] && ["kick","snare","hat"].includes(track.instrument)) pitch=track.instrument==="kick"?36:track.instrument==="snare"?38:42;
+      if(pitch){
+        const velocity=Math.max(1,Math.min(127,Math.round((track.volume??.8)*110)));
+        events.push({tick:absolute*ticksPerStep,type:0x90|(index%16),data:[Math.max(0,Math.min(127,pitch)),velocity]});
+        events.push({tick:absolute*ticksPerStep+Math.max(1,ticksPerStep-2),type:0x80|(index%16),data:[Math.max(0,Math.min(127,pitch)),0]});
+      }
+    }
+    events.sort((a,b)=>a.tick-b.tick||(a.type&0xf0)-(b.type&0xf0));
+    const bytes=[];let last=0;
+    events.forEach(e=>{bytes.push(...writeVarLen(Math.max(0,e.tick-last)),e.type,...e.data);last=e.tick});
+    bytes.push(0x00,0xff,0x2f,0x00);
+    tracksBytes.push([...asciiBytes("MTrk"),...u32bytes(bytes.length),...bytes]);
+  });
+  const header=[...asciiBytes("MThd"),...u32bytes(6),...u16bytes(1),...u16bytes(tracksBytes.length),...u16bytes(ppq)];
+  const all=[...header,...tracksBytes.flat()];
+  download((($("#projectName").value||"studiowave").replace(/[^a-z0-9_-]+/gi,"-"))+".mid",new Uint8Array(all),"audio/midi");
+  $("#statusText").textContent="MIDI exported";
+}
+function readMidiVarLen(bytes,state) {
+  let value=0,b;
+  do {if(state.i>=bytes.length)throw Error("Unexpected end of MIDI data");b=bytes[state.i++];value=(value<<7)|(b&0x7f)} while(b&0x80);
+  return value;
+}
+function parseStandardMidi(buffer) {
+  const bytes=new Uint8Array(buffer);
+  const readU16=(i)=>(bytes[i]<<8)|bytes[i+1];
+  const readU32=(i)=>(bytes[i]*16777216)+(bytes[i+1]<<16)+(bytes[i+2]<<8)+bytes[i+3];
+  if(String.fromCharCode(...bytes.slice(0,4))!=="MThd")throw Error("This is not a Standard MIDI File");
+  const headerLength=readU32(4),format=readU16(8),trackCount=readU16(10),division=readU16(12);
+  if(!division||division&0x8000)throw Error("SMPTE-timed MIDI files are not supported yet");
+  let offset=8+headerLength;const noteEvents=[];
+  for(let ti=0;ti<trackCount;ti++){
+    if(String.fromCharCode(...bytes.slice(offset,offset+4))!=="MTrk")throw Error("Malformed MIDI track chunk");
+    const end=offset+8+readU32(offset+4);let pos=offset+8,tick=0,running=0;
+    while(pos<end){
+      const state={i:pos};tick+=readMidiVarLen(bytes,state);pos=state.i;
+      let status=bytes[pos];
+      if(status<0x80){if(!running)throw Error("Invalid MIDI running status");status=running}
+      else {pos++;if(status<0xf0)running=status}
+      if(status===0xff){pos++;const lenState={i:pos},len=readMidiVarLen(bytes,lenState);pos=lenState.i+len;continue}
+      if(status===0xf0||status===0xf7){const lenState={i:pos},len=readMidiVarLen(bytes,lenState);pos=lenState.i+len;continue}
+      const kind=status&0xf0,channel=status&0x0f;
+      const a=bytes[pos++];const b=(kind===0xc0||kind===0xd0)?0:bytes[pos++];
+      if((kind===0x90&&b>0)||(kind===0x80)||(kind===0x90&&b===0)){
+        noteEvents.push({tick,kind,channel,pitch:a,velocity:b,track:ti});
+      }
+    }
+    offset=end;
+  }
+  const active=new Map(),notes=[];
+  noteEvents.sort((a,b)=>a.tick-b.tick);
+  for(const e of noteEvents){
+    const key=e.track+":"+e.channel+":"+e.pitch;
+    if(e.kind===0x90&&e.velocity>0)active.set(key,e);
+    else if(active.has(key)){const start=active.get(key);active.delete(key);notes.push({start:start.tick,duration:Math.max(1,e.tick-start.tick),pitch:e.pitch,velocity:start.velocity,track:start.track})}
+  }
+  const stepTicks=division/4;
+  return {format,division,notes:notes.map(n=>({...n,step:Math.max(0,Math.round(n.start/stepTicks)),length:Math.max(1,Math.round(n.duration/stepTicks))}))};
+}
+async function importStandardMidi(file) {
+  try{
+    const midi=parseStandardMidi(await file.arrayBuffer());
+    if(!midi.notes.length)throw Error("No note events were found in this MIDI file");
+    const byTrack=new Map();
+    midi.notes.forEach(note=>{
+      const id=note.track;
+      if(!byTrack.has(id))byTrack.set(id,[]);
+      byTrack.get(id).push(note);
+    });
+    let created=0;
+    for(const [trackIndex,notes] of byTrack){
+      const track=makeTrack("MIDI "+(trackIndex+1),"keys",COLORS[tracks.length%COLORS.length],.8);
+      track.startStep=0;track.lengthSteps=Math.min(64,Math.max(16,...notes.map(n=>n.step+Math.min(n.length,16))));
+      notes.forEach(note=>{
+        const local=note.step%16;
+        track.notes[String(local)]=note.pitch;
+        track.steps[local]=true;
+      });
+      tracks.push(track);selectedId=track.id;created++;
+    }
+    if(midi.format===0) $("#statusText").textContent="MIDI imported";
+    else $("#statusText").textContent="Imported "+created+" MIDI tracks";
+    renderAll();renderMixer();renderTimeline();
+  }catch(error){showDialog("MIDI import failed","<p></p>");const p=$("#dialogBody p");if(p)p.textContent=error.message||"Could not parse MIDI file."}
+}
+midiPicker?.addEventListener("change",async event=>{const file=event.target.files?.[0];if(file)await importStandardMidi(file);event.target.value=""});
+function drawWaveform(canvas, buffer) {
+  const rect=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+  const width=Math.max(200,Math.floor(rect.width*dpr)),height=Math.max(24,Math.floor(rect.height*dpr));
+  canvas.width=width;canvas.height=height;
+  const ctx=canvas.getContext("2d");if(!ctx)return;
+  ctx.clearRect(0,0,width,height);ctx.fillStyle="#10151d";ctx.fillRect(0,0,width,height);
+  const data=buffer.getChannelData(0),stride=Math.max(1,Math.floor(data.length/width));
+  ctx.strokeStyle="#4ad6c8";ctx.lineWidth=1;ctx.beginPath();
+  for(let x=0;x<width;x++){
+    let min=1,max=-1;const from=x*stride,to=Math.min(data.length,from+stride);
+    for(let i=from;i<to;i++){const v=data[i];if(v<min)min=v;if(v>max)max=v}
+    ctx.moveTo(x,Math.round((1+min)*height/2));ctx.lineTo(x,Math.round((1+max)*height/2));
+  }
+  ctx.stroke();
+}
+const originalRenderAssetsWithWave = renderAudioAssets;
+renderAudioAssets = function(){
+  originalRenderAssetsWithWave();
+  audioAssetList?.querySelectorAll(".audio-asset-card").forEach((card,index)=>{
+    const track=tracks.filter(t=>t.audioBuffer)[index];if(!track)return;
+    const canvas=document.createElement("canvas");canvas.className="audio-waveform";canvas.setAttribute("aria-label","Waveform preview for "+track.name);
+    card.querySelector(".audio-asset-meta")?.append(canvas);
+    drawWaveform(canvas,track.audioBuffer);
+  });
+};
+renderAudioAssets();
+const initialModelState=modelSnapshot();
+historyUI();
