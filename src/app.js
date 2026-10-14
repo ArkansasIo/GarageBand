@@ -246,10 +246,8 @@ function menuAction(action) {
 }
 document.querySelectorAll("[data-action]").forEach((button) => {
   button.addEventListener("click", () => {
-    if (button.dataset.action === "undo" || button.dataset.action === "redo") {
-      showDialog("Editing history", "<p>Undo and redo are reserved menu entries. A complete edit-history stack is not implemented yet.</p>");
-      return;
-    }
+    if (button.dataset.action === "undo") { undoEdit(); return; }
+    if (button.dataset.action === "redo") { redoEdit(); return; }
     menuAction(button.dataset.action);
   });
 });
@@ -612,11 +610,7 @@ function redoEdit() {
   historyUI(); $("#statusText").textContent="Redo";
 }
 document.addEventListener("click", event => {
-  if(event.target.closest('[data-action="undo"]')) { event.preventDefault(); undoEdit(); }
-  else if(event.target.closest('[data-action="redo"]')) { event.preventDefault(); redoEdit(); }
-}, true);
-document.addEventListener("pointerdown", event => {
-  if(event.target.closest(".seq-cell,.piano-cell,.timeline-controls,.track-mini-actions,.mixer-channel,.preset-card,[data-instrument],#clearPattern,#clearMelody,#duplicatePattern,#addTrack,#newProject")) scheduleHistoryCapture();
+  if(event.target.closest(".seq-cell,.piano-cell,.timeline-controls,.track-mini-actions,.mixer-channel,.preset-card,[data-instrument],#clearPattern,#clearMelody,#duplicatePattern,#addTrack,#newProject,[data-action='duplicate'],[data-action='clear'],[data-action='remove'],[data-action='mute'],[data-action='rename']")) scheduleHistoryCapture();
 }, true);
 document.addEventListener("change", event => {
   if(event.target.matches("#instrument,#trackMute,#smartInstrument,#smartMute,#smartName,#bpm,#projectName")) scheduleHistoryCapture();
