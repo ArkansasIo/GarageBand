@@ -58,3 +58,11 @@ Project import parses local JSON and checks the expected format marker. The curr
 - The timeline shows overlapping clip regions and provides bar-level move and trim controls.
 - Imported audio is started at its region's beginning and stopped at the region boundary. The current implementation loops the full decoded asset inside that region; region-level in/out offsets and waveform-based editing remain future work.
 - Project JSON persists clip positions and lengths, but imported audio data remains external and must be re-imported.
+
+
+## MIDI and editing history
+
+- Standard MIDI import parses SMF headers, track chunks, variable-length delta times, running status, and note-on/note-off pairs. SMPTE timing and advanced controller/tempo-map handling are not implemented.
+- MIDI export writes an SMF type-1 file with tempo metadata and note events for melody steps; drum steps map to General MIDI percussion pitches.
+- Undo/redo stores serialized project-model snapshots in a bounded in-memory history. Decoded audio buffers remain in memory and are matched by track ID during restoration.
+- Imported audio waveform previews are drawn from the first decoded channel to a canvas; this is a visual overview, not a sample-accurate editing surface.
