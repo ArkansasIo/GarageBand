@@ -48,3 +48,13 @@
 - [ ] MIDI file import/export and external MIDI controller support
 - [ ] Persistent audio asset packaging and cloud project storage
 - [ ] Advanced effect rack (EQ, compressor, reverb, delay) and plug-in hosting
+
+
+## Arrangement editing
+
+- [x] Four-bar arrangement overview with per-track clip regions
+- [x] Move clip regions by one bar and trim/extend their ends in one-bar increments
+- [x] Transport follows a four-bar loop and displays bar/beat/step position
+- [x] Save clip start and length in project JSON
+- [ ] Drag-and-drop region movement, arbitrary trim handles, split/join and snap/grid settings
+- [ ] Per-region fades, gain, time stretching and waveform rendering
