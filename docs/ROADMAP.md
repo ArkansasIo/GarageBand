@@ -68,3 +68,11 @@
 - [x] Waveform preview for imported audio assets
 - [ ] Full MIDI tempo maps, program changes, controller automation, polyphonic piano-roll notes per step
 - [ ] Audio region drag handles, splitting, fades and waveform zoom
+
+
+## Live master effects
+
+- [x] Stereo master reverb send with generated impulse response
+- [x] Delay with adjustable wet mix, delay time and feedback
+- [x] Master effects bypass and responsive controls
+- [ ] Per-track insert effects, EQ bands, compressor metering, and automation lanes
