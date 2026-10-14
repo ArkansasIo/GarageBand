@@ -31,7 +31,7 @@ function download(name,content,type){const a=document.createElement("a"),url=URL
 $("#saveProject").addEventListener("click",()=>download((($("#projectName").value||"session").replace(/[^a-z0-9_-]+/gi,"-"))+".json",JSON.stringify(snapshot(),null,2),"application/json"));
 $("#loadProject").addEventListener("click",()=>$("#filePicker").click());$("#filePicker").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(d.format!=="studiowave-project"||!Array.isArray(d.tracks))throw Error("Not a StudioWave project");tracks=d.tracks.map(t=>({...t,steps:Array.from({length:16},(_,i)=>!!t.steps?.[i]),notes:t.notes||{},color:t.color||COLORS[0]}));nextId=Math.max(0,...tracks.map(t=>t.id))+1;selectedId=tracks[0]?.id||1;$("#projectName").value=d.name||"Imported Session";$("#bpm").value=d.bpm||120;$("#masterVolume").value=d.masterVolume??.75;$("#masterValue").textContent=Math.round(Number($("#masterVolume").value)*100)+"%";if(master)master.gain.value=Number($("#masterVolume").value);renderAll()}catch(err){alert("Could not open project: "+err.message)}e.target.value=""});
 $("#newProject").addEventListener("click",()=>{if(!confirm("Start a new session? Unsaved changes will be lost."))return;stop();seed();$("#projectName").value="Untitled Session";$("#bpm").value=120;renderAll()});
-$("#exportWav").addEventListener("click",async()=>{const btn=$("#exportWav");btn.disabled=true;btn.textContent="Rendering…";const originalTracks=tracks,oldCtx=audioCtx,oldMaster=master;try{const snap=snapshot(),rate=44100,bpm=snap.bpm,stepDur=60/bpm/4,totalSteps=64,duration=totalSteps*stepDur+1,off=new OfflineAudioContext(2,Math.ceil(duration*rate),rate),out=off.createGain();out.gain.value=snap.masterVolume;out.connect(off.destination);audioCtx=off;master=out;tracks=snap.tracks;tracks.forEach(t=>{if(t.muted)return;for(let i=0;i<totalSteps;i++){const s=i%16;if(t.steps[s]||t.notes[String(s)])playTrack(t,s,i*stepDur)}});const rendered=await off.startRendering();const wav=audioBufferToWav(rendered);download((snap.name||"studiowave").replace(/[^a-z0-9_-]+/gi,"-")+".wav",wav,"audio/wav")}catch(err){console.error(err);alert("WAV export failed in this browser. Try a recent Chrome, Edge, or Safari browser with Web Audio enabled.")}finally{tracks=originalTracks;audioCtx=oldCtx;master=oldMaster;btn.disabled=false;btn.textContent="Export WAV"}});
+$("#exportWav").addEventListener("click",async()=>{const btn=$("#exportWav");btn.disabled=true;btn.textContent="Rendering…";const originalTracks=tracks,oldCtx=audioCtx,oldMaster=master;try{const snap=snapshot(),rate=44100,bpm=snap.bpm,stepDur=60/bpm/4,totalSteps=64,duration=totalSteps*stepDur+1,off=new OfflineAudioContext(2,Math.ceil(duration*rate),rate),out=off.createGain();out.gain.value=snap.masterVolume;out.connect(off.destination);audioCtx=off;master=out;tracks=snap.tracks.map(t=>({...t,audioBuffer:originalTracks.find(x=>x.id===t.id)?.audioBuffer||null,audioSource:null}));tracks.forEach(t=>{if(t.muted)return;for(let i=0;i<totalSteps;i++){const s=i%16;if(t.steps[s]||t.notes[String(s)])playTrack(t,s,i*stepDur)}});const rendered=await off.startRendering();const wav=audioBufferToWav(rendered);download((snap.name||"studiowave").replace(/[^a-z0-9_-]+/gi,"-")+".wav",wav,"audio/wav")}catch(err){console.error(err);alert("WAV export failed in this browser. Try a recent Chrome, Edge, or Safari browser with Web Audio enabled.")}finally{tracks=originalTracks;audioCtx=oldCtx;master=oldMaster;btn.disabled=false;btn.textContent="Export WAV"}});
 function audioBufferToWav(buffer){const channels=buffer.numberOfChannels,length=buffer.length*channels*2+44,ab=new ArrayBuffer(length),v=new DataView(ab);let p=0;const s=x=>{for(let i=0;i<x.length;i++)v.setUint8(p++,x.charCodeAt(i))},u16=x=>{v.setUint16(p,x,true);p+=2},u32=x=>{v.setUint32(p,x,true);p+=4};s("RIFF");u32(length-8);s("WAVE");s("fmt ");u32(16);u16(1);u16(channels);u32(buffer.sampleRate);u32(buffer.sampleRate*channels*2);u16(channels*2);u16(16);s("data");u32(length-p-4);const data=Array.from({length:channels},(_,c)=>buffer.getChannelData(c));for(let i=0;i<buffer.length;i++)for(let c=0;c<channels;c++){const x=Math.max(-1,Math.min(1,data[c][i]));v.setInt16(p,x<0?x*32768:x*32767,true);p+=2}return ab}
 renderAll();
 
@@ -292,3 +292,140 @@ renderAll = function() {
 };
 renderBrowser();
 renderMixer();
+
+
+// Imported audio assets, metronome and expanded session persistence.
+const audioFilePicker = $("#audioFilePicker");
+const audioAssetList = $("#audioAssetList");
+const audioAssetStatus = $("#audioAssetStatus");
+let metronomeEnabled = false;
+let metronomeLastBeat = -1;
+const originalPlayTrack = playTrack;
+playTrack = function(track, s, time) {
+  if (track.audioBuffer) {
+    if (s === 0 && !track.muted && !track.audioSource && audioCtx && typeof audioCtx.createBufferSource === "function") {
+      try {
+        const source = audioCtx.createBufferSource();
+        const gain = audioCtx.createGain();
+        source.buffer = track.audioBuffer;
+        source.loop = true;
+        gain.gain.value = track.volume;
+        const panner = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+        source.connect(gain);
+        if (panner) { panner.pan.value = track.pan; gain.connect(panner); panner.connect(master); }
+        else gain.connect(master);
+        source.onended = () => { if (track.audioSource === source) track.audioSource = null; };
+        source.start(time);
+        track.audioSource = source;
+      } catch (error) { console.error("Could not start imported audio", error); }
+    }
+    return;
+  }
+  return originalPlayTrack(track, s, time);
+};
+const originalStop = stop;
+stop = function() {
+  tracks.forEach(track => {
+    if (track.audioSource) {
+      try { track.audioSource.stop(); } catch (_) {}
+      track.audioSource = null;
+    }
+  });
+  originalStop();
+};
+$("#stopBtn").addEventListener("click", () => { tracks.forEach(track => { if (track.audioSource) { try { track.audioSource.stop(); } catch (_) {} track.audioSource = null; } }); });
+$("#rewindBtn").addEventListener("click", () => {
+  tracks.forEach(track => { if (track.audioSource) { try { track.audioSource.stop(); } catch (_) {} track.audioSource = null; } });
+});
+function humanDuration(seconds) {
+  if (!Number.isFinite(seconds)) return "Unknown duration";
+  const m = Math.floor(seconds / 60), s = Math.floor(seconds % 60);
+  return m + ":" + String(s).padStart(2, "0");
+}
+function renderAudioAssets() {
+  if (!audioAssetList) return;
+  audioAssetList.replaceChildren();
+  const assets = tracks.filter(track => track.audioBuffer);
+  audioAssetStatus.textContent = assets.length ? assets.length + (assets.length === 1 ? " audio track" : " audio tracks") : "No imported audio";
+  assets.forEach(track => {
+    const card = document.createElement("div");
+    card.className = "audio-asset-card";
+    const icon = document.createElement("span"); icon.className = "audio-asset-icon"; icon.textContent = "♫";
+    const meta = document.createElement("span"); meta.className = "audio-asset-meta";
+    const title = document.createElement("strong"); title.textContent = track.name; title.title = track.audioFileName || track.name;
+    const details = document.createElement("small"); details.textContent = humanDuration(track.audioBuffer.duration) + " · " + track.audioBuffer.numberOfChannels + " ch · " + Math.round(track.audioBuffer.sampleRate / 1000) + " kHz";
+    meta.append(title, details);
+    const select = document.createElement("button"); select.textContent = "Select"; select.addEventListener("click", () => { selectedId = track.id; renderAll(); renderMixer(); });
+    const remove = document.createElement("button"); remove.className = "remove-audio"; remove.textContent = "×"; remove.title = "Remove audio track"; remove.addEventListener("click", () => { if (track.audioSource) { try { track.audioSource.stop(); } catch (_) {} } tracks = tracks.filter(t => t.id !== track.id); if (!tracks.some(t => t.id === selectedId)) selectedId = tracks[0].id; renderAll(); renderMixer(); renderAudioAssets(); });
+    card.append(icon, meta, select, remove); audioAssetList.append(card);
+  });
+}
+async function importAudioFiles(fileList) {
+  const files = Array.from(fileList || []);
+  if (!files.length) return;
+  ensureAudio();
+  for (const file of files) {
+    if (!file.type.startsWith("audio/") && !/\.(wav|mp3|ogg|m4a|aac|flac|aiff?)$/i.test(file.name)) continue;
+    try {
+      const buffer = await audioCtx.decodeAudioData(await file.arrayBuffer());
+      const baseName = file.name.replace(/\.[^.]+$/, "").slice(0, 48) || "Imported audio";
+      const track = makeTrack(baseName, "audio", COLORS[tracks.length % COLORS.length], .8);
+      track.audioBuffer = buffer;
+      track.audioFileName = file.name;
+      track.steps.fill(false);
+      tracks.push(track);
+      selectedId = track.id;
+    } catch (error) {
+      showDialog("Audio import failed", "<p>The browser could not decode <strong></strong>. Try a WAV or MP3 file.</p>");
+      const strong = $("#dialogBody strong"); if (strong) strong.textContent = file.name;
+    }
+  }
+  renderAll(); renderMixer(); renderAudioAssets();
+  $("#statusText").textContent = "Audio assets ready";
+}
+$("#importAudioBtn")?.addEventListener("click", () => audioFilePicker.click());
+audioFilePicker?.addEventListener("change", async event => {
+  await importAudioFiles(event.target.files);
+  event.target.value = "";
+});
+$("#metronomeBtn")?.addEventListener("click", () => {
+  metronomeEnabled = !metronomeEnabled;
+  $("#metronomeBtn").setAttribute("aria-pressed", String(metronomeEnabled));
+  $("#metronomeBtn").textContent = "♩ Metronome: " + (metronomeEnabled ? "On" : "Off");
+  if (metronomeEnabled) { ensureAudio(); metronomeClick(audioCtx.currentTime + .02, true); }
+});
+function metronomeClick(time, accented = false) {
+  if (!audioCtx || !metronomeEnabled) return;
+  const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+  osc.type = "sine"; osc.frequency.setValueAtTime(accented ? 1500 : 1000, time);
+  gain.gain.setValueAtTime(.0001, time); gain.gain.exponentialRampToValueAtTime(.14, time + .003); gain.gain.exponentialRampToValueAtTime(.0001, time + .035);
+  osc.connect(gain); gain.connect(master); osc.start(time); osc.stop(time + .04);
+}
+const oldTick = tick;
+tick = function() {
+  if (!isPlaying) return;
+  const beat = Math.floor(currentStep() / 4);
+  if (metronomeEnabled && beat !== metronomeLastBeat) {
+    ensureAudio(); metronomeClick(audioCtx.currentTime + .015, beat === 0);
+    metronomeLastBeat = beat;
+  }
+  oldTick();
+  if (currentStep() === 0) metronomeLastBeat = -1;
+};
+const oldSnapshot = snapshot;
+snapshot = function() {
+  const data = oldSnapshot();
+  data.version = 2;
+  data.tracks = data.tracks.map(({audioBuffer, audioSource, audioFileName, ...track}) => ({
+    ...track,
+    audioFileName: audioFileName || null,
+    audioAssetRequired: Boolean(audioFileName)
+  }));
+  return data;
+};
+const oldRenderAllForAudio = renderAll;
+renderAll = function() {
+  oldRenderAllForAudio();
+  renderAudioAssets();
+};
+renderAudioAssets();
