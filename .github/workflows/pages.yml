@@ -22,9 +22,10 @@ jobs:
         uses: actions/checkout@v4
       - name: Assemble static browser app
         run: |
-          mkdir -p _site/src _site/docs
+          mkdir -p _site/src _site/docs _site/assets/sounds
           cp index.html _site/index.html
           cp src/app.js src/styles.css _site/src/
+          cp -R assets/sounds/. _site/assets/sounds/
           cp docs/ROADMAP.md docs/ARCHITECTURE.md docs/API_AND_DATABASE.md _site/docs/
           touch _site/.nojekyll
       - name: Upload static site artifact
