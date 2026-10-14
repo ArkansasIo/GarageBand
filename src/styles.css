@@ -54,3 +54,18 @@
 /* Waveform preview and edit-history states */
 .audio-waveform{width:100%;height:34px;display:block;margin-top:6px;border-radius:4px;background:#10151d}
 .menu-pop button:disabled{opacity:.35;cursor:not-allowed}
+
+/* Live master effects rack */
+.effects-rack{padding:14px 16px;margin-bottom:12px}
+.effects-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.effects-heading>div{display:grid;gap:3px}
+.effects-heading strong{font-size:11px;letter-spacing:.12em}
+.effects-heading small{color:var(--muted,#929cad);font-size:11px}
+.effects-heading button{border:1px solid var(--line,#2a3442);border-radius:7px;padding:7px 11px;background:#1c2632;color:var(--text,#edf2f8)}
+.effects-heading button[aria-pressed="true"]{color:#ffb454;border-color:#ffb454}
+.effects-controls{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:16px}
+.effects-controls label{display:grid;grid-template-columns:1fr auto;gap:7px;color:var(--muted,#aab4c2);font-size:12px}
+.effects-controls output{color:var(--text,#edf2f8);font-variant-numeric:tabular-nums}
+.effects-controls input{grid-column:1/-1;width:100%;accent-color:#4ad6c8}
+@media(max-width:720px){.effects-controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:420px){.effects-controls{grid-template-columns:1fr}}
