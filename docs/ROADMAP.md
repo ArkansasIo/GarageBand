@@ -76,3 +76,7 @@
 - [x] Delay with adjustable wet mix, delay time and feedback
 - [x] Master effects bypass and responsive controls
 - [ ] Per-track insert effects, EQ bands, compressor metering, and automation lanes
+
+
+- [x] Master low-shelf/high-shelf EQ controls
+- [x] Adjustable master-bus dynamics compression
