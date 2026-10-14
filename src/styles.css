@@ -50,3 +50,7 @@
 .timeline-empty{color:#5f6c80;font-size:10px;padding:0 3px}
 .timeline-note{font-size:10px;color:#78869a;padding:0 16px 10px}
 @media(max-width:900px){.timeline-scroll{padding:10px}.timeline-ruler,.timeline-lane{grid-template-columns:88px repeat(4,minmax(86px,1fr))}.timeline-track-name{font-size:9px}.timeline-controls button{padding:2px 4px}}
+
+/* Waveform preview and edit-history states */
+.audio-waveform{width:100%;height:34px;display:block;margin-top:6px;border-radius:4px;background:#10151d}
+.menu-pop button:disabled{opacity:.35;cursor:not-allowed}
