@@ -20,16 +20,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Upload static site
+      - name: Assemble static browser app
+        run: |
+          mkdir -p _site/src _site/docs
+          cp index.html _site/index.html
+          cp src/app.js src/styles.css _site/src/
+          cp docs/ROADMAP.md docs/ARCHITECTURE.md docs/API_AND_DATABASE.md _site/docs/
+          touch _site/.nojekyll
+      - name: Upload static site artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
+
   deploy:
+    runs-on: ubuntu-latest
+    needs: build
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
