@@ -829,3 +829,68 @@ $("#effectsBypass")?.addEventListener("click",()=>{
   if(audioCtx)applyMasterEffects();
 });
 updateEffectsLabels();
+
+
+// Built-in StudioWave sound asset library. These are original generated WAV samples.
+const BUILTIN_SAMPLES = [
+{id:"kick",name:"Studio Kick",file:"kick.wav",category:"Drums",description:"Punchy synthesized kick"},
+{id:"snare",name:"Studio Snare",file:"snare.wav",category:"Drums",description:"Noise-and-tone snare"},
+{id:"closed_hat",name:"Closed Hi-Hat",file:"closed_hat.wav",category:"Drums",description:"Short metallic hat"},
+{id:"open_hat",name:"Open Hi-Hat",file:"open_hat.wav",category:"Drums",description:"Airy open hat"},
+{id:"clap",name:"Hand Clap",file:"clap.wav",category:"Drums",description:"Layered synthetic clap"},
+{id:"rimshot",name:"Rimshot",file:"rimshot.wav",category:"Drums",description:"Sharp percussion click"},
+{id:"low_tom",name:"Low Tom",file:"low_tom.wav",category:"Drums",description:"Tuned low drum"},
+{id:"high_tom",name:"High Tom",file:"high_tom.wav",category:"Drums",description:"Tuned high drum"},
+{id:"crash",name:"Crash Cymbal",file:"crash.wav",category:"Drums",description:"Bright noisy cymbal"},
+{id:"ride",name:"Ride Cymbal",file:"ride.wav",category:"Drums",description:"Sustained metallic ride"},
+{id:"bass_pluck",name:"Bass Pluck",file:"bass_pluck.wav",category:"Bass",description:"Short plucked bass"},
+{id:"sub_bass",name:"Sub Bass",file:"sub_bass.wav",category:"Bass",description:"Deep rounded bass"},
+{id:"synth_lead",name:"Synth Lead",file:"synth_lead.wav",category:"Synths",description:"Bright electronic lead"},
+{id:"warm_pad",name:"Warm Pad",file:"warm_pad.wav",category:"Synths",description:"Soft sustained pad"},
+{id:"electric_keys",name:"Electric Keys",file:"electric_keys.wav",category:"Keys",description:"Electric keyboard tone"},
+{id:"soft_piano",name:"Soft Piano",file:"soft_piano.wav",category:"Keys",description:"Gentle piano-like tone"},
+{id:"bell_pluck",name:"Bell Pluck",file:"bell_pluck.wav",category:"Synths",description:"Bright bell tone"},
+{id:"riser",name:"Noise Riser",file:"riser.wav",category:"FX",description:"Ascending noise sweep"},
+{id:"downlifter",name:"Downlifter",file:"downlifter.wav",category:"FX",description:"Descending noise sweep"},
+{id:"impact",name:"Cinematic Impact",file:"impact.wav",category:"FX",description:"Low transient impact"},
+{id:"metronome_click",name:"Metronome Click",file:"metronome_click.wav",category:"Utility",description:"Timing reference"}
+];
+const builtinBuffers=new Map(),sampleLibraryHost=$("#sampleLibraryList"),sampleLibraryStatus=$("#sampleLibraryStatus");
+const sampleAssetUrl=sample=>new URL("../assets/sounds/"+sample.file,import.meta.url).href;
+function playBuiltinBuffer(buffer,when=0,volume=.8,pan=0){
+ ensureAudio();const source=audioCtx.createBufferSource(),gain=audioCtx.createGain();source.buffer=buffer;gain.gain.value=volume;
+ const panner=audioCtx.createStereoPanner?.();source.connect(gain);
+ if(panner){panner.pan.value=pan;gain.connect(panner);panner.connect(master)}else gain.connect(master);
+ source.start(Math.max(audioCtx.currentTime+.005,when||0));return source;
+}
+async function audioCtxOrDecode(response){ensureAudio();return audioCtx.decodeAudioData(await response.arrayBuffer())}
+async function getBuiltinBuffer(sample){
+ if(builtinBuffers.has(sample.id))return builtinBuffers.get(sample.id);
+ const response=await fetch(sampleAssetUrl(sample));if(!response.ok)throw Error("Could not fetch "+sample.file+" ("+response.status+")");
+ const buffer=await audioCtxOrDecode(response);builtinBuffers.set(sample.id,buffer);return buffer;
+}
+async function loadBuiltinSamples(){
+ if(!sampleLibraryHost)return;
+ ensureAudio();sampleLibraryHost.replaceChildren();sampleLibraryStatus.textContent="Loading "+BUILTIN_SAMPLES.length+" WAV files…";let loaded=0;
+ for(const sample of BUILTIN_SAMPLES){
+  const row=document.createElement("div");row.className="sample-library-item";
+  const meta=document.createElement("span");meta.className="sample-library-name";
+  const name=document.createElement("strong");name.textContent=sample.name;
+  const detail=document.createElement("small");detail.textContent=sample.category+" · "+sample.description;meta.append(name,detail);
+  const preview=document.createElement("button");preview.type="button";preview.textContent="▶";preview.title="Preview "+sample.name;preview.setAttribute("aria-label","Preview "+sample.name);
+  preview.addEventListener("click",async()=>{try{playBuiltinBuffer(await getBuiltinBuffer(sample),audioCtx.currentTime+.015,.75,0);$("#statusText").textContent="Previewing "+sample.name}catch(error){showDialog("Sample unavailable","<p>Could not load "+sample.file+". Check the deployment includes assets/sounds.</p>")}});
+  const add=document.createElement("button");add.type="button";add.className="sample-add";add.textContent="Add track";
+  add.addEventListener("click",async()=>{try{const buffer=await getBuiltinBuffer(sample),track=makeTrack(sample.name,"audio",COLORS[tracks.length%COLORS.length],.8);track.audioBuffer=buffer;track.audioFileName=sample.file;track.steps.fill(false);track.lengthSteps=Math.max(1,Math.min(64,Math.ceil(buffer.duration*(Number($("#bpm").value)||120)*4/60)));tracks.push(track);selectedId=track.id;renderAll();renderMixer();renderAudioAssets();renderTimeline();$("#statusText").textContent="Added "+sample.name}catch(error){showDialog("Sample unavailable","<p>Could not load "+sample.file+". Check the deployment includes assets/sounds.</p>")}});
+  row.append(meta,preview,add);sampleLibraryHost.append(row);
+  try{const buffer=await getBuiltinBuffer(sample);loaded++;detail.textContent=sample.category+" · "+sample.description+" · "+buffer.duration.toFixed(2)+" s"}catch(error){detail.textContent=sample.category+" · unavailable";console.warn("Sample load failed",sample.file,error)}
+  sampleLibraryStatus.textContent=loaded+" / "+BUILTIN_SAMPLES.length+" loaded";
+ }
+}
+const playTrackBeforeBuiltinSamples=playTrack;
+playTrack=function(track,s,time,absoluteStep=Math.floor(step)){
+ const sampleId=track.instrument==="kick"?"kick":track.instrument==="snare"?"snare":track.instrument==="hat"?"closed_hat":null;
+ const buffer=sampleId?builtinBuffers.get(sampleId):null;
+ if(buffer&&track.steps?.[s]&&!track.muted){playBuiltinBuffer(buffer,time,track.volume,track.pan);if(track.notes?.[String(s)])return playTrackBeforeBuiltinSamples({...track,steps:Array(16).fill(false)},s,time,absoluteStep);return}
+ return playTrackBeforeBuiltinSamples(track,s,time,absoluteStep);
+};
+loadBuiltinSamples();
