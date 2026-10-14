@@ -59,12 +59,12 @@
       <div class="section-heading"><span>SOUND BROWSER</span></div>
       <div class="library-content"><label class="search-label" for="soundSearch">Search instruments</label><input id="soundSearch" class="search-input" placeholder="Try “bass” or “drum”…">
         <div id="browserResults" class="browser-results"></div>
-        <div class="browser-note">Audio is synthesized locally with Web Audio. Audio-file import and third-party plug-ins are planned features.</div>
+        <div class="browser-note">Built-in synths run locally. Import WAV, MP3, OGG, M4A or other formats supported by your browser to add audio loop tracks. Audio assets remain on this device.</div>
       </div>
     </section>
   </aside>
   <section class="arrangement panel" id="arrangementPanel">
-    <div class="arrangement-header"><div><h1>Arrangement</h1><p>16-step loop · 1 bar per pattern</p></div><div class="arrangement-tools"><button id="clearPattern" class="quiet">Clear selected</button><button id="duplicatePattern" class="quiet">Duplicate</button></div></div>
+    <div class="arrangement-header"><div><h1>Arrangement</h1><p>16-step loop · 1 bar per pattern</p></div><div class="arrangement-tools"><button id="importAudioBtn" class="quiet">＋ Import audio</button><input id="audioFilePicker" type="file" accept="audio/*,.wav,.mp3,.ogg,.m4a,.aac,.flac" multiple hidden><button id="metronomeBtn" class="quiet" aria-pressed="false">♩ Metronome: Off</button><button id="clearPattern" class="quiet">Clear selected</button><button id="duplicatePattern" class="quiet">Duplicate</button></div></div>
     <div class="grid-scroll"><div id="sequencer" class="sequencer" tabindex="0" aria-label="Step sequencer"></div></div>
     <div class="arrangement-footer"><span><i class="legend-on"></i> Active step</span><span><i class="legend-play"></i> Playhead</span><span id="stepCount">0 notes</span></div>
     <section class="lower-panel" id="editorPanel">
@@ -78,6 +78,7 @@
       <div class="piano-title"><div><h2>Melody editor</h2><p>For melodic instruments, select a pitch row and click a step.</p></div><button id="clearMelody" class="quiet">Clear melody</button></div>
       <div class="grid-scroll piano-scroll"><div id="pianoRoll" class="piano-roll"></div></div>
     </section>
+    <section class="audio-assets-panel" id="audioAssetsPanel"><div class="section-heading"><span>AUDIO ASSETS</span><span id="audioAssetStatus">No imported audio</span></div><div class="audio-assets-content"><p>Import a backing track, vocal, sample, or field recording. Imported audio loops during playback and is included in WAV export.</p><div id="audioAssetList" class="audio-asset-list"></div></div></section>
     <section class="mixer-panel" id="mixerPanel" hidden><div class="section-heading"><span>MIXER</span><span>Track channels</span></div><div id="mixerChannels" class="mixer-channels"></div></section>
     <section class="smart-panel" id="inspectorPanel" hidden><div class="section-heading"><span>SMART CONTROLS</span><span>Selected track</span></div><div class="smart-grid">
       <label>Preset<select id="smartInstrument"><option value="kick">Deep Kick</option><option value="snare">Snare</option><option value="hat">Closed Hi-hat</option><option value="bass">Synth Bass</option><option value="lead">Bright Lead</option><option value="pad">Warm Pad</option><option value="keys">Electric Keys</option></select></label>
