@@ -58,3 +58,13 @@
 - [x] Save clip start and length in project JSON
 - [ ] Drag-and-drop region movement, arbitrary trim handles, split/join and snap/grid settings
 - [ ] Per-region fades, gain, time stretching and waveform rendering
+
+
+## MIDI, editing history and waveform work
+
+- [x] Undo/redo stack for common pattern, track and control edits (session-local, bounded history)
+- [x] Standard MIDI File import for note events
+- [x] Standard MIDI File export for programmed notes and percussion steps
+- [x] Waveform preview for imported audio assets
+- [ ] Full MIDI tempo maps, program changes, controller automation, polyphonic piano-roll notes per step
+- [ ] Audio region drag handles, splitting, fades and waveform zoom
