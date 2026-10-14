@@ -39,3 +39,13 @@ The prototype uses browser Web Audio oscillators and generated noise. Playback c
 ## Security and privacy
 
 Project import parses local JSON and checks the expected format marker. The current project format stores data, not executable scripts or plug-ins. The API uses password hashing, JWT bearer tokens, request validation, parameterized SQL, rate limiting and security headers. Keep credentials in environment variables and do not expose MySQL directly to the public internet.
+
+
+## Audio asset workflow
+
+- Audio files are selected locally through the browser file picker and decoded using `AudioContext.decodeAudioData`.
+- Imported assets are represented as audio tracks with an in-memory `AudioBuffer`, per-track gain and stereo pan.
+- Audio tracks loop while transport playback is active and are rendered into the stereo WAV export through `OfflineAudioContext`.
+- Project JSON intentionally stores metadata rather than raw audio data. Imported source files must be reselected when opening a session on another device.
+- A metronome toggle generates a short accent click on each beat. It is a monitoring aid and is not mixed into the exported arrangement.
+- The browser's supported codecs determine which audio file types can be imported; WAV is the recommended interchange format.
