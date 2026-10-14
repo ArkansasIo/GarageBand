@@ -69,3 +69,13 @@
 .effects-controls input{grid-column:1/-1;width:100%;accent-color:#4ad6c8}
 @media(max-width:720px){.effects-controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:420px){.effects-controls{grid-template-columns:1fr}}
+
+/* Built-in sound asset library */
+.sample-library-heading{margin-top:18px}
+.sample-library-list{display:grid;gap:7px;margin-top:8px}
+.sample-library-item{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:6px;padding:8px;border:1px solid var(--line,#293341);border-radius:8px;background:#151c26}
+.sample-library-name{display:grid;gap:3px;min-width:0}
+.sample-library-name strong{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sample-library-name small{font-size:10px;color:var(--muted,#929cad)}
+.sample-library-item button{font-size:11px;padding:6px 8px}
+.sample-library-item .sample-add{background:#203a3b;border-color:#315c5a}
