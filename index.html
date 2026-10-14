@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#11151d"><title>StudioWave — Browser Music Studio</title>
+<meta name="theme-color" content="#11151d"><meta name="description" content="StudioWave browser-based music studio and digital audio workstation.">
+<title>StudioWave — Browser Music Studio</title>
 <link rel="stylesheet" href="./src/styles.css">
 </head>
 <body>
@@ -11,25 +12,62 @@
   <div class="project-name"><span class="live-dot"></span><input id="projectName" value="Untitled Session" aria-label="Project name"></div>
   <div class="top-actions"><button id="newProject" class="quiet">New</button><button id="saveProject" class="quiet">Save project</button><button id="loadProject" class="quiet">Open</button><button id="exportWav" class="primary">Export WAV</button><input id="filePicker" type="file" accept=".json,application/json" hidden></div>
 </header>
+<nav class="menubar" aria-label="Application menus">
+  <details class="menu"><summary>File</summary><div class="menu-pop">
+    <button data-action="new">New session <kbd>Ctrl/⌘ N</kbd></button><button data-action="open">Open project… <kbd>Ctrl/⌘ O</kbd></button><button data-action="save">Save project <kbd>Ctrl/⌘ S</kbd></button><hr><button data-action="export">Export stereo WAV…</button><button data-action="download-midi">Export pattern notes (JSON)</button>
+  </div></details>
+  <details class="menu"><summary>Edit</summary><div class="menu-pop">
+    <button data-action="undo" disabled>Undo <kbd>Ctrl/⌘ Z</kbd></button><button data-action="redo" disabled>Redo <kbd>Ctrl/⌘ Y</kbd></button><hr><button data-action="clear">Clear selected track</button><button data-action="duplicate">Duplicate selected track</button><button data-action="rename">Rename selected track</button>
+  </div></details>
+  <details class="menu"><summary>Track</summary><div class="menu-pop">
+    <button data-action="add">Add instrument track</button><button data-action="duplicate">Duplicate track</button><button data-action="mute">Toggle mute</button><button data-action="remove">Remove selected track</button><hr>
+    <details class="submenu"><summary>Add track type ▸</summary><div class="menu-pop submenu-pop"><button data-instrument="kick">Drum / Kick</button><button data-instrument="snare">Drum / Snare</button><button data-instrument="hat">Drum / Hi-hat</button><button data-instrument="bass">Bass synth</button><button data-instrument="lead">Lead synth</button><button data-instrument="pad">Pad synth</button><button data-instrument="keys">Electric keys</button></div></details>
+  </div></details>
+  <details class="menu"><summary>Controls</summary><div class="menu-pop"><button data-action="play">Play / Pause <kbd>Space</kbd></button><button data-action="stop">Stop</button><button data-action="rewind">Return to start</button><hr><button data-action="tempo-down">Tempo −1 BPM</button><button data-action="tempo-up">Tempo +1 BPM</button></div></details>
+  <details class="menu"><summary>View</summary><div class="menu-pop"><button data-panel="library">Show / hide Library</button><button data-panel="inspector">Show / hide Smart Controls</button><button data-panel="mixer">Show / hide Mixer</button><button data-panel="browser">Show / hide Sound Browser</button><hr><button data-action="focus-grid">Focus step grid</button></div></details>
+  <details class="menu"><summary>Help</summary><div class="menu-pop"><button data-action="shortcuts">Keyboard shortcuts</button><button data-action="about">About StudioWave</button><a href="./docs/API_AND_DATABASE.md">API and database guide</a><a href="./docs/ROADMAP.md">Feature roadmap</a></div></details>
+</nav>
 <main>
 <section class="transport panel">
   <div class="transport-buttons"><button id="playBtn" class="play" aria-label="Play">▶</button><button id="stopBtn" aria-label="Stop">■</button><button id="rewindBtn" aria-label="Return to start">↤</button></div>
   <div class="time-display"><small>POSITION</small><strong id="position">1.1.1</strong></div>
-  <div class="transport-setting"><label for="bpm">TEMPO</label><div class="stepper"><button id="bpmDown">−</button><input id="bpm" type="number" min="40" max="240" value="120"><button id="bpmUp">+</button></div><small>BPM</small></div>
+  <div class="transport-setting"><label for="bpm">TEMPO</label><div class="stepper"><button id="bpmDown" aria-label="Decrease tempo">−</button><input id="bpm" type="number" min="40" max="240" value="120"><button id="bpmUp" aria-label="Increase tempo">+</button></div><small>BPM</small></div>
   <div class="transport-setting"><label for="masterVolume">MASTER</label><input id="masterVolume" type="range" min="0" max="1" step=".01" value=".75"><small id="masterValue">75%</small></div>
   <div class="transport-status"><span id="statusLed"></span><span id="statusText">Ready to create</span></div>
 </section>
-<div class="workspace">
-  <aside class="sidebar panel">
-    <div class="section-heading"><span>TRACKS</span><button id="addTrack" class="small-add">＋ Add track</button></div>
-    <div id="trackList" class="track-list"></div>
-    <div class="sidebar-footer"><div class="hint-icon">i</div><p><strong>Quick start</strong><br>Choose a track, then click cells in the step grid to build a beat. Press Play to hear it.</p></div>
+<div class="workspace" id="workspace">
+  <aside class="sidebar panel" id="libraryPanel">
+    <div class="pane-tabs" role="tablist" aria-label="Left panels"><button class="pane-tab active" data-left-tab="tracks" role="tab" aria-selected="true">Tracks</button><button class="pane-tab" data-left-tab="library" role="tab" aria-selected="false">Library</button><button class="pane-tab" data-left-tab="browser" role="tab" aria-selected="false">Browser</button></div>
+    <section class="left-pane" data-left-pane="tracks">
+      <div class="section-heading"><span>TRACKS</span><button id="addTrack" class="small-add">＋ Add track</button></div>
+      <div id="trackList" class="track-list"></div>
+      <div class="sidebar-footer"><div class="hint-icon">i</div><p><strong>Quick start</strong><br>Choose a track, then click cells in the step grid to build a beat. Press Play to hear it.</p></div>
+    </section>
+    <section class="left-pane" data-left-pane="library" hidden>
+      <div class="section-heading"><span>SOUND LIBRARY</span></div>
+      <div class="library-content"><p class="pane-description">Choose an instrument preset for the selected track.</p>
+        <button class="preset-card" data-instrument="kick"><span>◉</span><span><strong>Deep Kick</strong><small>Drums · Low punch</small></span></button>
+        <button class="preset-card" data-instrument="snare"><span>▧</span><span><strong>Studio Snare</strong><small>Drums · Noise burst</small></span></button>
+        <button class="preset-card" data-instrument="hat"><span>✳</span><span><strong>Closed Hi-hat</strong><small>Drums · Bright tick</small></span></button>
+        <button class="preset-card" data-instrument="bass"><span>〰</span><span><strong>Synth Bass</strong><small>Synth · Saw wave</small></span></button>
+        <button class="preset-card" data-instrument="lead"><span>♫</span><span><strong>Bright Lead</strong><small>Synth · Square wave</small></span></button>
+        <button class="preset-card" data-instrument="pad"><span>▱</span><span><strong>Warm Pad</strong><small>Synth · Soft chords</small></span></button>
+        <button class="preset-card" data-instrument="keys"><span>▦</span><span><strong>Electric Keys</strong><small>Keys · Bell tone</small></span></button>
+      </div>
+    </section>
+    <section class="left-pane" data-left-pane="browser" hidden>
+      <div class="section-heading"><span>SOUND BROWSER</span></div>
+      <div class="library-content"><label class="search-label" for="soundSearch">Search instruments</label><input id="soundSearch" class="search-input" placeholder="Try “bass” or “drum”…">
+        <div id="browserResults" class="browser-results"></div>
+        <div class="browser-note">Audio is synthesized locally with Web Audio. Audio-file import and third-party plug-ins are planned features.</div>
+      </div>
+    </section>
   </aside>
-  <section class="arrangement panel">
+  <section class="arrangement panel" id="arrangementPanel">
     <div class="arrangement-header"><div><h1>Arrangement</h1><p>16-step loop · 1 bar per pattern</p></div><div class="arrangement-tools"><button id="clearPattern" class="quiet">Clear selected</button><button id="duplicatePattern" class="quiet">Duplicate</button></div></div>
-    <div class="grid-scroll"><div id="sequencer" class="sequencer"></div></div>
+    <div class="grid-scroll"><div id="sequencer" class="sequencer" tabindex="0" aria-label="Step sequencer"></div></div>
     <div class="arrangement-footer"><span><i class="legend-on"></i> Active step</span><span><i class="legend-play"></i> Playhead</span><span id="stepCount">0 notes</span></div>
-    <div class="lower-panel">
+    <section class="lower-panel" id="editorPanel">
       <div class="section-heading"><span>SELECTED TRACK</span><span id="selectedTrackName">Kick</span></div>
       <div class="track-controls">
         <label>Instrument<select id="instrument"><option value="kick">Deep Kick</option><option value="snare">Snare</option><option value="hat">Closed Hi-hat</option><option value="bass">Synth Bass</option><option value="lead">Bright Lead</option><option value="pad">Warm Pad</option><option value="keys">Electric Keys</option></select></label>
@@ -38,10 +76,18 @@
         <label class="mute-control"><input id="trackMute" type="checkbox"> Mute track</label>
       </div>
       <div class="piano-title"><div><h2>Melody editor</h2><p>For melodic instruments, select a pitch row and click a step.</p></div><button id="clearMelody" class="quiet">Clear melody</button></div>
-      <div id="pianoRoll" class="piano-roll"></div>
-    </div>
+      <div class="grid-scroll piano-scroll"><div id="pianoRoll" class="piano-roll"></div></div>
+    </section>
+    <section class="mixer-panel" id="mixerPanel" hidden><div class="section-heading"><span>MIXER</span><span>Track channels</span></div><div id="mixerChannels" class="mixer-channels"></div></section>
+    <section class="smart-panel" id="inspectorPanel" hidden><div class="section-heading"><span>SMART CONTROLS</span><span>Selected track</span></div><div class="smart-grid">
+      <label>Preset<select id="smartInstrument"><option value="kick">Deep Kick</option><option value="snare">Snare</option><option value="hat">Closed Hi-hat</option><option value="bass">Synth Bass</option><option value="lead">Bright Lead</option><option value="pad">Warm Pad</option><option value="keys">Electric Keys</option></select></label>
+      <label>Output level <input id="smartVolume" type="range" min="0" max="1" step=".01" value=".8"></label><label>Pan position <input id="smartPan" type="range" min="-1" max="1" step=".01" value="0"></label>
+      <label>Track name <input id="smartName" maxlength="48" value="Kick"></label>
+      <label class="inline-check"><input id="smartMute" type="checkbox"> Mute this track</label>
+    </div></section>
   </section>
 </div>
+<dialog id="infoDialog" class="info-dialog"><div class="dialog-head"><strong id="dialogTitle">StudioWave</strong><button id="closeDialog" aria-label="Close dialog">×</button></div><div id="dialogBody" class="dialog-body"></div></dialog>
 <footer><span>StudioWave · Original browser-based music-making demo</span><span>Audio is generated locally in your browser</span></footer>
 </main>
 <script type="module" src="./src/app.js"></script>
