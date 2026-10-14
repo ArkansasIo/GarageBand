@@ -74,3 +74,8 @@ The Web Audio master gain feeds a shared effects input. The effects input fans o
 
 
 The master bus also includes low-shelf and high-shelf biquad filters plus a configurable dynamics compressor before the dry/reverb/delay split. EQ ranges from -12 dB to +12 dB. Compressor intensity changes the threshold and ratio; it is a simple master-bus compressor, not a multiband or per-track dynamics processor.
+
+
+## Built-in sound assets
+
+The static `assets/sounds/` directory contains 21 original mono PCM WAV one-shots at 22.05 kHz/16-bit, indexed by `manifest.json`. The Sound Browser fetches and decodes files into an in-memory AudioBuffer cache. Preview creates a one-shot buffer source through the master gain/effects graph; Add Track creates an audio track referencing the decoded buffer for the current session. Kick, snare and closed-hi-hat sequencer events use matching cached samples when available and fall back to synthesized voices before assets load. URLs are derived from `import.meta.url` so the library works under the GitHub Pages repository subpath.
