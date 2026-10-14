@@ -429,3 +429,63 @@ renderAll = function() {
   renderAudioAssets();
 };
 renderAudioAssets();
+
+
+// Microphone recording: permission is requested only after an explicit Record click.
+let microphoneRecorder = null;
+let microphoneStream = null;
+let microphoneChunks = [];
+let recordingStartedAt = 0;
+const recordButton = $("#recordBtn");
+async function toggleMicrophoneRecording() {
+  if (microphoneRecorder && microphoneRecorder.state === "recording") {
+    microphoneRecorder.stop();
+    recordButton.classList.remove("recording");
+    recordButton.textContent = "● Record";
+    recordButton.setAttribute("aria-pressed", "false");
+    $("#statusText").textContent = "Finishing recording…";
+    return;
+  }
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+    showDialog("Microphone recording unavailable", "<p>This browser does not support microphone recording. Use a current browser over HTTPS or localhost, or import an existing audio file.</p>");
+    return;
+  }
+  try {
+    microphoneStream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    microphoneChunks = [];
+    const preferred = ["audio/webm;codecs=opus","audio/webm","audio/mp4"].find(type => MediaRecorder.isTypeSupported(type));
+    microphoneRecorder = preferred ? new MediaRecorder(microphoneStream,{mimeType:preferred}) : new MediaRecorder(microphoneStream);
+    microphoneRecorder.addEventListener("dataavailable", event => { if (event.data?.size) microphoneChunks.push(event.data); });
+    microphoneRecorder.addEventListener("stop", async () => {
+      try {
+        const blob = new Blob(microphoneChunks,{type:microphoneRecorder.mimeType||"audio/webm"});
+        ensureAudio();
+        const decoded = await audioCtx.decodeAudioData(await blob.arrayBuffer());
+        const track = makeTrack("Microphone Take", "audio", COLORS[tracks.length % COLORS.length], .85);
+        track.audioBuffer = decoded;
+        track.audioFileName = "Microphone Take";
+        track.steps.fill(false);
+        tracks.push(track); selectedId = track.id;
+        renderAll(); renderMixer(); renderAudioAssets();
+        $("#statusText").textContent = "Recording added to session";
+      } catch (error) {
+        console.error(error);
+        showDialog("Recording could not be decoded", "<p>The browser recorded audio but could not decode the resulting file. Try a current Chrome, Edge, or Safari browser, then record again.</p>");
+        $("#statusText").textContent = "Recording decode failed";
+      } finally {
+        microphoneStream?.getTracks().forEach(track => track.stop());
+        microphoneStream = null; microphoneRecorder = null; microphoneChunks = [];
+      }
+    }, {once:true});
+    microphoneRecorder.start(250);
+    recordingStartedAt = Date.now();
+    recordButton.classList.add("recording");
+    recordButton.textContent = "■ Finish take";
+    recordButton.setAttribute("aria-pressed", "true");
+    $("#statusText").textContent = "Recording microphone…";
+  } catch (error) {
+    showDialog("Microphone permission required", "<p>Allow microphone access in your browser to record a take. The recording stays in this browser session until you export it.</p>");
+    $("#statusText").textContent = "Microphone permission denied";
+  }
+}
+recordButton?.addEventListener("click", toggleMicrophoneRecording);
