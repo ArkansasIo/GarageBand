@@ -35,6 +35,15 @@
   <div class="transport-setting"><label for="masterVolume">MASTER</label><input id="masterVolume" type="range" min="0" max="1" step=".01" value=".75"><small id="masterValue">75%</small></div>
   <div class="transport-status"><span id="statusLed"></span><span id="statusText">Ready to create</span></div>
 </section>
+<section class="effects-rack panel" aria-label="Master effects">
+  <div class="effects-heading"><div><strong>MASTER EFFECTS</strong><small>Live stereo processing · applies to generated and imported audio</small></div><button id="effectsBypass" type="button" aria-pressed="false">Effects On</button></div>
+  <div class="effects-controls">
+    <label>Reverb mix <output id="reverbValue">18%</output><input id="reverbMix" type="range" min="0" max=".7" step=".01" value=".18"></label>
+    <label>Delay mix <output id="delayValue">12%</output><input id="delayMix" type="range" min="0" max=".65" step=".01" value=".12"></label>
+    <label>Delay time <output id="delayTimeValue">280 ms</output><input id="delayTime" type="range" min=".08" max=".75" step=".01" value=".28"></label>
+    <label>Delay feedback <output id="delayFeedbackValue">28%</output><input id="delayFeedback" type="range" min="0" max=".75" step=".01" value=".28"></label>
+  </div>
+</section>
 <div class="workspace" id="workspace">
   <aside class="sidebar panel" id="libraryPanel">
     <div class="pane-tabs" role="tablist" aria-label="Left panels"><button class="pane-tab active" data-left-tab="tracks" role="tab" aria-selected="true">Tracks</button><button class="pane-tab" data-left-tab="library" role="tab" aria-selected="false">Library</button><button class="pane-tab" data-left-tab="browser" role="tab" aria-selected="false">Browser</button></div>
