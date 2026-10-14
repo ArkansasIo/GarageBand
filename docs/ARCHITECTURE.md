@@ -66,3 +66,8 @@ Project import parses local JSON and checks the expected format marker. The curr
 - MIDI export writes an SMF type-1 file with tempo metadata and note events for melody steps; drum steps map to General MIDI percussion pitches.
 - Undo/redo stores serialized project-model snapshots in a bounded in-memory history. Decoded audio buffers remain in memory and are matched by track ID during restoration.
 - Imported audio waveform previews are drawn from the first decoded channel to a canvas; this is a visual overview, not a sample-accurate editing surface.
+
+
+## Master effects signal flow
+
+The Web Audio master gain feeds a shared effects input. The effects input fans out to a dry output, a convolution reverb send, and a feedback delay send; the three paths sum at the device output. Reverb mix, delay mix, delay time, and feedback are live controls. The rack is a global bus rather than per-track inserts, and the generated impulse response is intentionally synthetic.
