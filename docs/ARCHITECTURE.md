@@ -49,3 +49,12 @@ Project import parses local JSON and checks the expected format marker. The curr
 - Project JSON intentionally stores metadata rather than raw audio data. Imported source files must be reselected when opening a session on another device.
 - A metronome toggle generates a short accent click on each beat. It is a monitoring aid and is not mixed into the exported arrangement.
 - The browser's supported codecs determine which audio file types can be imported; WAV is the recommended interchange format.
+
+
+## Multibar timeline
+
+- Every track stores `startStep` and `lengthSteps` (sixteenth-note units) for a four-bar arrangement.
+- The transport advances through 64 sixteenth-note steps; the step sequencer pattern repeats each bar.
+- The timeline shows overlapping clip regions and provides bar-level move and trim controls.
+- Imported audio is started at its region's beginning and stopped at the region boundary. The current implementation loops the full decoded asset inside that region; region-level in/out offsets and waveform-based editing remain future work.
+- Project JSON persists clip positions and lengths, but imported audio data remains external and must be re-imported.
