@@ -70,7 +70,7 @@
     <section class="lower-panel" id="editorPanel">
       <div class="section-heading"><span>SELECTED TRACK</span><span id="selectedTrackName">Kick</span></div>
       <div class="track-controls">
-        <label>Instrument<select id="instrument"><option value="kick">Deep Kick</option><option value="snare">Snare</option><option value="hat">Closed Hi-hat</option><option value="bass">Synth Bass</option><option value="lead">Bright Lead</option><option value="pad">Warm Pad</option><option value="keys">Electric Keys</option></select></label>
+        <label>Instrument<select id="instrument"><option value="kick">Deep Kick</option><option value="snare">Snare</option><option value="hat">Closed Hi-hat</option><option value="bass">Synth Bass</option><option value="lead">Bright Lead</option><option value="pad">Warm Pad</option><option value="keys">Electric Keys</option><option value="audio">Imported Audio</option></select></label>
         <label>Track volume <span id="trackVolumeLabel">80%</span><input id="trackVolume" type="range" min="0" max="1" step=".01" value=".8"></label>
         <label>Pan <span id="panLabel">Center</span><input id="trackPan" type="range" min="-1" max="1" step=".01" value="0"></label>
         <label class="mute-control"><input id="trackMute" type="checkbox"> Mute track</label>
@@ -81,7 +81,7 @@
     <section class="audio-assets-panel" id="audioAssetsPanel"><div class="section-heading"><span>AUDIO ASSETS</span><span id="audioAssetStatus">No imported audio</span></div><div class="audio-assets-content"><p>Import a backing track, vocal, sample, or field recording. Imported audio loops during playback and is included in WAV export.</p><div id="audioAssetList" class="audio-asset-list"></div></div></section>
     <section class="mixer-panel" id="mixerPanel" hidden><div class="section-heading"><span>MIXER</span><span>Track channels</span></div><div id="mixerChannels" class="mixer-channels"></div></section>
     <section class="smart-panel" id="inspectorPanel" hidden><div class="section-heading"><span>SMART CONTROLS</span><span>Selected track</span></div><div class="smart-grid">
-      <label>Preset<select id="smartInstrument"><option value="kick">Deep Kick</option><option value="snare">Snare</option><option value="hat">Closed Hi-hat</option><option value="bass">Synth Bass</option><option value="lead">Bright Lead</option><option value="pad">Warm Pad</option><option value="keys">Electric Keys</option></select></label>
+      <label>Preset<select id="smartInstrument"><option value="kick">Deep Kick</option><option value="snare">Snare</option><option value="hat">Closed Hi-hat</option><option value="bass">Synth Bass</option><option value="lead">Bright Lead</option><option value="pad">Warm Pad</option><option value="keys">Electric Keys</option><option value="audio">Imported Audio</option></select></label>
       <label>Output level <input id="smartVolume" type="range" min="0" max="1" step=".01" value=".8"></label><label>Pan position <input id="smartPan" type="range" min="-1" max="1" step=".01" value="0"></label>
       <label>Track name <input id="smartName" maxlength="48" value="Kick"></label>
       <label class="inline-check"><input id="smartMute" type="checkbox"> Mute this track</label>
