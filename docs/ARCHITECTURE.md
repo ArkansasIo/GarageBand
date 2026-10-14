@@ -71,3 +71,6 @@ Project import parses local JSON and checks the expected format marker. The curr
 ## Master effects signal flow
 
 The Web Audio master gain feeds a shared effects input. The effects input fans out to a dry output, a convolution reverb send, and a feedback delay send; the three paths sum at the device output. Reverb mix, delay mix, delay time, and feedback are live controls. The rack is a global bus rather than per-track inserts, and the generated impulse response is intentionally synthetic.
+
+
+The master bus also includes low-shelf and high-shelf biquad filters plus a configurable dynamics compressor before the dry/reverb/delay split. EQ ranges from -12 dB to +12 dB. Compressor intensity changes the threshold and ratio; it is a simple master-bus compressor, not a multiband or per-track dynamics processor.
