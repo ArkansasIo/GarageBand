@@ -80,3 +80,12 @@
 
 - [x] Master low-shelf/high-shelf EQ controls
 - [x] Adjustable master-bus dynamics compression
+
+
+## Built-in audio asset library
+
+- [x] 21 original PCM WAV samples across drums, bass, synths, keys, FX and utility
+- [x] Asset manifest and provenance documentation
+- [x] Sound Browser sample preview and Add Track controls
+- [x] Sequencer kick/snare/closed-hi-hat samples with synthesized fallback
+- [ ] Sample start/end editing, velocity layers, round-robin variations and sample-pack ZIP export
