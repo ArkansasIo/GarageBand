@@ -1,0 +1,113 @@
+{
+  "name": "StudioWave Built-in Sound Library",
+  "version": "1.0.0",
+  "format": "WAV PCM mono, 16-bit, 22050 Hz",
+  "provenance": "Original procedural synthesis created for this repository; no third-party samples.",
+  "assets": [
+    {
+      "file": "kick.wav",
+      "category": "Drums",
+      "description": "Synthesized kick transient"
+    },
+    {
+      "file": "snare.wav",
+      "category": "Drums",
+      "description": "Noise-and-tone snare"
+    },
+    {
+      "file": "closed_hat.wav",
+      "category": "Drums",
+      "description": "Short metallic hi-hat"
+    },
+    {
+      "file": "open_hat.wav",
+      "category": "Drums",
+      "description": "Open hi-hat"
+    },
+    {
+      "file": "clap.wav",
+      "category": "Drums",
+      "description": "Layered synthetic clap"
+    },
+    {
+      "file": "rimshot.wav",
+      "category": "Drums",
+      "description": "Sharp rim click"
+    },
+    {
+      "file": "low_tom.wav",
+      "category": "Drums",
+      "description": "Low tuned drum"
+    },
+    {
+      "file": "high_tom.wav",
+      "category": "Drums",
+      "description": "High tuned drum"
+    },
+    {
+      "file": "crash.wav",
+      "category": "Drums",
+      "description": "Noisy crash cymbal"
+    },
+    {
+      "file": "ride.wav",
+      "category": "Drums",
+      "description": "Metallic ride cymbal"
+    },
+    {
+      "file": "bass_pluck.wav",
+      "category": "Bass",
+      "description": "Plucked bass note"
+    },
+    {
+      "file": "sub_bass.wav",
+      "category": "Bass",
+      "description": "Deep sub-bass note"
+    },
+    {
+      "file": "synth_lead.wav",
+      "category": "Synths",
+      "description": "Bright synthesized lead"
+    },
+    {
+      "file": "warm_pad.wav",
+      "category": "Synths",
+      "description": "Soft sustained pad"
+    },
+    {
+      "file": "electric_keys.wav",
+      "category": "Keys",
+      "description": "Electric-keyboard tone"
+    },
+    {
+      "file": "soft_piano.wav",
+      "category": "Keys",
+      "description": "Soft piano-like tone"
+    },
+    {
+      "file": "bell_pluck.wav",
+      "category": "Synths",
+      "description": "Bell-like pluck"
+    },
+    {
+      "file": "riser.wav",
+      "category": "FX",
+      "description": "Ascending noise sweep"
+    },
+    {
+      "file": "downlifter.wav",
+      "category": "FX",
+      "description": "Descending noise sweep"
+    },
+    {
+      "file": "impact.wav",
+      "category": "FX",
+      "description": "Low transient impact"
+    },
+    {
+      "file": "metronome_click.wav",
+      "category": "Utility",
+      "description": "Short timing reference"
+    }
+  ]
+}
