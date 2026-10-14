@@ -7,7 +7,36 @@ const makeTrack=(name,instrument,color,volume=.8)=>({id:nextId++,name,instrument
 function seed(){nextId=1;tracks=[makeTrack("Kick","kick",COLORS[0],.9),makeTrack("Snare","snare",COLORS[1],.75),makeTrack("Hi-hats","hat",COLORS[2],.5),makeTrack("Bass","bass",COLORS[3],.75),makeTrack("Lead","lead",COLORS[4],.7)];tracks[0].steps=[true,false,false,false,true,false,false,false,true,false,false,false,true,false,false,false];tracks[1].steps=[false,false,false,false,true,false,false,false,false,false,false,false,true,false,false,false];tracks[2].steps=Array.from({length:16},(_,i)=>i%2===0);tracks[3].steps=[true,false,false,true,false,false,true,false,true,false,false,true,false,false,true,false];tracks[4].notes={"0":72,"3":67,"5":69,"8":72,"11":76,"13":74};selectedId=1}
 seed();
 const selected=()=>tracks.find(t=>t.id===selectedId)||tracks[0];
-function ensureAudio(){if(!audioCtx){audioCtx=new (window.AudioContext||window.webkitAudioContext)();master=audioCtx.createGain();master.gain.value=Number($("#masterVolume").value);master.connect(audioCtx.destination)}if(audioCtx.state==="suspended")audioCtx.resume()}
+let effectsInput=null,effectsDry=null,reverbSend=null,reverbWet=null,delaySend=null,delayNode=null,delayFeedbackNode=null,delayWet=null,effectsBypassed=false;
+function makeImpulse(context,seconds=2.2,decay=2.5){
+  const length=Math.floor(context.sampleRate*seconds),buffer=context.createBuffer(2,length,context.sampleRate);
+  for(let ch=0;ch<2;ch++){const data=buffer.getChannelData(ch);for(let i=0;i<length;i++){const fade=Math.pow(1-i/length,decay);data[i]=(Math.random()*2-1)*fade}}
+  return buffer;
+}
+function setupMasterEffects(){
+  if(!audioCtx||effectsInput)return;
+  effectsInput=audioCtx.createGain();effectsDry=audioCtx.createGain();
+  const convolver=audioCtx.createConvolver();convolver.buffer=makeImpulse(audioCtx);
+  reverbSend=audioCtx.createGain();reverbWet=audioCtx.createGain();
+  delaySend=audioCtx.createGain();delayNode=audioCtx.createDelay(1);
+  delayFeedbackNode=audioCtx.createGain();delayWet=audioCtx.createGain();
+  effectsInput.connect(effectsDry);effectsDry.connect(audioCtx.destination);
+  effectsInput.connect(reverbSend);reverbSend.connect(convolver);convolver.connect(reverbWet);reverbWet.connect(audioCtx.destination);
+  effectsInput.connect(delaySend);delaySend.connect(delayNode);delayNode.connect(delayWet);delayWet.connect(audioCtx.destination);
+  delayNode.connect(delayFeedbackNode);delayFeedbackNode.connect(delayNode);
+  applyMasterEffects();
+}
+function applyMasterEffects(){
+  if(!audioCtx||!effectsInput)return;
+  const reverb=Number($("#reverbMix")?.value??.18),delay=Number($("#delayMix")?.value??.12),time=Number($("#delayTime")?.value??.28),feedback=Number($("#delayFeedback")?.value??.28);
+  effectsDry.gain.value=effectsBypassed?1:Math.cos(reverb*Math.PI/2)*Math.cos(delay*Math.PI/2);
+  reverbSend.gain.value=effectsBypassed?0:reverb;
+  reverbWet.gain.value=effectsBypassed?0:.8;
+  delaySend.gain.value=effectsBypassed?0:delay;
+  delayNode.delayTime.value=time;delayFeedbackNode.gain.value=effectsBypassed?0:feedback;
+  delayWet.gain.value=effectsBypassed?0:.8;
+}
+function ensureAudio(){if(!audioCtx){audioCtx=new (window.AudioContext||window.webkitAudioContext)();master=audioCtx.createGain();master.gain.value=Number($("#masterVolume").value);setupMasterEffects();master.connect(effectsInput||audioCtx.destination)}if(audioCtx.state==="suspended")audioCtx.resume()}
 function tone(freq,time,duration,type="sine",gain=.12,pan=0){const osc=audioCtx.createOscillator(),amp=audioCtx.createGain(),panner=audioCtx.createStereoPanner?audioCtx.createStereoPanner():null;osc.type=type;osc.frequency.setValueAtTime(freq,time);amp.gain.setValueAtTime(.0001,time);amp.gain.exponentialRampToValueAtTime(Math.max(.001,gain),time+.012);amp.gain.exponentialRampToValueAtTime(.0001,time+duration);osc.connect(amp);if(panner){panner.pan.value=pan;amp.connect(panner);panner.connect(master)}else amp.connect(master);osc.start(time);osc.stop(time+duration+.03)}
 function noise(time,duration,gain,pan=0){const buffer=audioCtx.createBuffer(1,Math.ceil(audioCtx.sampleRate*duration),audioCtx.sampleRate),data=buffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;const src=audioCtx.createBufferSource(),amp=audioCtx.createGain();src.buffer=buffer;amp.gain.setValueAtTime(gain,time);amp.gain.exponentialRampToValueAtTime(.001,time+duration);const p=audioCtx.createStereoPanner?.();src.connect(amp);if(p){p.pan.value=pan;amp.connect(p);p.connect(master)}else amp.connect(master);src.start(time)}
 function playTrack(t,s,time){if(t.muted)return;const vol=t.volume,pan=t.pan,inst=t.instrument;if(t.steps[s]){if(inst==="kick"){tone(145,time,.2,"sine",.5*vol,pan);const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.setValueAtTime(120,time);o.frequency.exponentialRampToValueAtTime(42,time+.15);g.gain.setValueAtTime(.35*vol,time);g.gain.exponentialRampToValueAtTime(.001,time+.18);o.connect(g);g.connect(master);o.start(time);o.stop(time+.2)}else if(inst==="snare"){noise(time,.16,.28*vol,pan);tone(180,time,.08,"triangle",.1*vol,pan)}else if(inst==="hat")noise(time,.045,.12*vol,pan);else if(inst==="bass")tone(55,time,.23,"sawtooth",.2*vol,pan);else if(inst==="lead")tone(440,time,.18,"square",.13*vol,pan);else if(inst==="pad"){tone(220,time,.35,"triangle",.1*vol,pan);tone(330,time,.35,"sine",.07*vol,pan)}else if(inst==="keys"){tone(440,time,.22,"triangle",.18*vol,pan);tone(660,time,.16,"sine",.04*vol,pan)}}const pitch=t.notes[String(s)];if(pitch&&["bass","lead","pad","keys"].includes(inst)){const f=440*Math.pow(2,(pitch-69)/12);tone(f,time,.28,inst==="lead"?"square":inst==="bass"?"sawtooth":"triangle",.16*vol,pan)}}
@@ -769,3 +798,21 @@ renderAudioAssets = function(){
 renderAudioAssets();
 const initialModelState=modelSnapshot();
 historyUI();
+
+/* Master effects controls are live and work with the shared output graph. */
+function updateEffectsLabels(){
+  $("#reverbValue").textContent=Math.round(Number($("#reverbMix").value)*100)+"%";
+  $("#delayValue").textContent=Math.round(Number($("#delayMix").value)*100)+"%";
+  $("#delayTimeValue").textContent=Math.round(Number($("#delayTime").value)*1000)+" ms";
+  $("#delayFeedbackValue").textContent=Math.round(Number($("#delayFeedback").value)*100)+"%";
+}
+["reverbMix","delayMix","delayTime","delayFeedback"].forEach(id=>$("#"+id)?.addEventListener("input",()=>{
+  updateEffectsLabels();if(audioCtx)applyMasterEffects();
+}));
+$("#effectsBypass")?.addEventListener("click",()=>{
+  effectsBypassed=!effectsBypassed;
+  $("#effectsBypass").setAttribute("aria-pressed",String(effectsBypassed));
+  $("#effectsBypass").textContent=effectsBypassed?"Effects Bypassed":"Effects On";
+  if(audioCtx)applyMasterEffects();
+});
+updateEffectsLabels();
