@@ -65,6 +65,7 @@
   </aside>
   <section class="arrangement panel" id="arrangementPanel">
     <div class="arrangement-header"><div><h1>Arrangement</h1><p>16-step loop · 1 bar per pattern</p></div><div class="arrangement-tools"><button id="importAudioBtn" class="quiet">＋ Import audio</button><input id="audioFilePicker" type="file" accept="audio/*,.wav,.mp3,.ogg,.m4a,.aac,.flac" multiple hidden><button id="metronomeBtn" class="quiet" aria-pressed="false">♩ Metronome: Off</button><button id="clearPattern" class="quiet">Clear selected</button><button id="duplicatePattern" class="quiet">Duplicate</button></div></div>
+    <section class="timeline-panel"><div class="section-heading"><span>ARRANGEMENT TIMELINE</span><span>4-bar loop · move clips with arrows</span></div><div class="timeline-scroll"><div id="timelineEditor" class="timeline-editor"></div></div></section>
     <div class="grid-scroll"><div id="sequencer" class="sequencer" tabindex="0" aria-label="Step sequencer"></div></div>
     <div class="arrangement-footer"><span><i class="legend-on"></i> Active step</span><span><i class="legend-play"></i> Playhead</span><span id="stepCount">0 notes</span></div>
     <section class="lower-panel" id="editorPanel">
