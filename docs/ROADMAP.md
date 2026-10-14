@@ -33,3 +33,18 @@
 - Optional authentication and project-sync API.
 - PostgreSQL/MySQL metadata storage and object storage for recordings.
 - Permission checks, rate limits, and backup/restore.
+
+
+## Audio production milestones
+
+- [x] Browser-generated drum and synthesizer instruments
+- [x] Step sequencer and melodic piano grid
+- [x] Track mixer with volume, pan and mute
+- [x] Local JSON session save/open and stereo WAV export
+- [x] Import decoded local audio files as looping tracks
+- [x] Microphone capture to create an audio track (browser permission required)
+- [x] Metronome monitoring click
+- [ ] Non-destructive region trimming, arrangement timeline, automation lanes and undo/redo history
+- [ ] MIDI file import/export and external MIDI controller support
+- [ ] Persistent audio asset packaging and cloud project storage
+- [ ] Advanced effect rack (EQ, compressor, reverb, delay) and plug-in hosting
